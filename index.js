@@ -19,6 +19,38 @@ app.get('/', function (req, res) {
   res.sendFile(__dirname + '/views/index.html');
 });
 
+app.use((req, res, next) => {
+  const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const language = req.headers['accept-language'];
+  const software = req.headers['user-agent'];
+
+  const browser = software.split(') ')[0].split(' (')[1];
+  const os = software.split(') ')[1].split(' ')[0];
+  const device = /Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile/.test(software) ? 'Mobile Device' : 'Computer';
+
+  res.locals.ipaddress = ipAddress;
+  res.locals.language = language;
+  res.locals.software = software;
+  res.locals.browser = browser;
+  res.locals.os = os;
+  res.locals.device = device;
+
+  next();
+});
+
+app.get('/api/whoami', (req, res) => {
+  const { ipaddress, language, software } = res.locals;
+  const details = req.query.details;
+
+  if (details === 'true') {
+    const { browser, os, device } = res.locals;
+    res.json({ ipaddress, language, software, browser, os, device });
+  } else {
+    res.json({ ipaddress, language, software });
+  }
+});
+
+
 // your first API endpoint...
 app.get('/api/hello', function (req, res) {
   res.json({ greeting: 'hello API' });
